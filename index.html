@@ -13,22 +13,23 @@
     <style>
         body { 
             font-family: 'Noto Serif TC', serif; 
+            margin: 0;
+            padding: 0;
             /* ========================================== */
             /* 這裡加入了背景圖片設定！                           */
             /* 請把括號裡面的中文字，替換成您的圖片網址 (結尾是 .jpg 的那個) */
             /* ========================================== */
-            background-image: url('https://imgur.com/aGlkCwv.jpg'); 
+            background-image: url('https://imgur.com/undefined.jpg'); 
             background-size: cover;
-            background-position: center;
-            background-attachment: fixed;
+            background-position: center top; /* 確保地圖部分固定在上方 */
+            background-attachment: fixed;    /* 讓背景固定，文字滾動時彷彿在畫卷上寫字 */
             background-repeat: no-repeat;
-            background-color: #fdf8ef; /* 圖片還沒載入時的底色 */
+            background-color: #e5d8c3;       /* 預設米底色 */
         }
         .animate-fade-in { animation: fadeIn 0.5s ease-out forwards; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
-<!-- 移除了 body 原本的純色背景，讓圖片能透出來 -->
 <body>
     <div id="root"></div>
 
@@ -232,9 +233,10 @@
             }, [selectedCountry, selectedEvent]);
 
             return (
-                /* 這裡加入了 /85 和 backdrop-blur-sm 讓背景圖透出來並保持文字清晰 */
-                <div className="min-h-screen bg-[#fdf8ef]/85 text-amber-950 pb-10 backdrop-blur-sm">
-                    <header className="bg-[#8b4513] text-amber-50 p-4 shadow-md sticky top-0 z-50">
+                /* 移除了背景顏色，只保留文字顏色，讓容器完全透明 */
+                <div className="min-h-screen text-amber-950 pb-10 flex flex-col">
+                    {/* 頂部標題列 (固定在上方，稍微半透明才不會擋住地圖) */}
+                    <header className="bg-[#8b4513]/90 text-amber-50 p-4 shadow-md fixed w-full top-0 z-50 backdrop-blur-sm">
                         <div className="max-w-4xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4">
                             <div className="flex items-center gap-2">
                                 <Icon name="ScrollText" />
@@ -250,16 +252,18 @@
                         </div>
                     </header>
 
-                    <main className="max-w-4xl mx-auto p-4 mt-4">
+                    {/* pt-[48vh] 是關鍵！它把所有遊戲內容往下推到螢幕 48% 的位置，剛好落在您的米色畫卷上 */}
+                    <main className="max-w-4xl w-full mx-auto p-4 flex-grow flex flex-col justify-start pt-[48vh] md:pt-[50vh] relative z-10">
                         {gameState === 'intro' && (
-                            <div className="bg-[#fffcf5]/95 border-2 border-[#d2b48c] rounded-lg p-8 shadow-lg text-center animate-fade-in">
+                            /* 移除了原本的白底與邊框，讓文字直接顯示在畫卷上 */
+                            <div className="p-4 md:p-8 text-center animate-fade-in">
                                 <h2 className="text-4xl font-bold mb-4 text-[#8b4513]">孔子周遊列國</h2>
                                 <h3 className="text-2xl mb-8 text-amber-800">十三年求道之旅</h3>
-                                <div className="text-left bg-amber-50 p-6 rounded border border-amber-200 mb-8 leading-relaxed">
+                                <div className="text-left mb-8 leading-relaxed max-w-2xl mx-auto">
                                     <p className="mb-2"><strong>目標：</strong> 幫助孔子做出抉擇，堅持「以道抗勢」、「安貧樂道」。</p>
                                     <p className="mb-2 text-red-700 font-bold">⚠️ 注意：選擇正確的「道」，往往會損失「糧食」與「權勢」。</p>
                                 </div>
-                                <button onClick={() => setGameState('playing')} className="bg-[#8b4513] hover:bg-[#a0522d] text-white px-8 py-3 rounded-full font-bold text-lg flex items-center gap-2 mx-auto transition-transform hover:scale-105">
+                                <button onClick={() => setGameState('playing')} className="bg-[#8b4513] hover:bg-[#a0522d] text-white px-8 py-3 rounded-full font-bold text-lg flex items-center gap-2 mx-auto transition-transform hover:scale-105 shadow-md">
                                     <Icon name="Play" className="w-5 h-5" /> 開始旅程
                                 </button>
                             </div>
@@ -267,42 +271,45 @@
 
                         {(gameState === 'playing' || gameState === 'feedback' || gameState === 'routing') && (
                             <div className="space-y-6">
-                                <div className={`bg-[#fffcf5]/95 border-2 rounded-lg p-6 shadow-sm overflow-x-auto transition-all ${gameState === 'routing' ? 'border-amber-500 shadow-amber-200' : 'border-[#d2b48c]'}`}>
-                                    <div className="flex items-center min-w-max pb-4 px-2">
+                                {/* 路線地圖：改為半透明玻璃風格，融入畫卷 */}
+                                <div className={`bg-white/30 backdrop-blur-sm border-2 border-[#8b4513]/20 rounded-lg p-4 shadow-sm overflow-x-auto transition-all ${gameState === 'routing' ? 'border-amber-500 shadow-amber-200' : ''}`}>
+                                    <div className="flex items-center min-w-max pb-2 px-2">
                                         {ROUTE_DATA.map((node, idx) => (
                                             <React.Fragment key={node.id}>
                                                 <button onClick={() => handleMapClick(idx)} className={`flex flex-col items-center ${idx <= currentLevelId ? 'opacity-100' : 'opacity-50'}`}>
-                                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 ${idx === currentLevelId ? 'bg-[#8b4513] text-amber-50 border-[#8b4513] scale-110' : 'bg-amber-200 text-amber-800'}`}>
+                                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 ${idx === currentLevelId ? 'bg-[#8b4513] text-amber-50 border-[#8b4513] scale-110 shadow-md' : 'bg-amber-100 text-amber-800 border-amber-300'}`}>
                                                         {idx + 1}
                                                     </div>
                                                     <span className="text-xs mt-2 font-bold">{node.state}</span>
                                                 </button>
-                                                {idx < ROUTE_DATA.length - 1 && <div className="w-8 h-1 bg-amber-200 mx-2"></div>}
+                                                {idx < ROUTE_DATA.length - 1 && <div className="w-8 h-1 bg-amber-800/20 mx-2"></div>}
                                             </React.Fragment>
                                         ))}
                                     </div>
                                 </div>
 
                                 {gameState !== 'routing' && (
-                                    <div className="bg-[#fffcf5]/95 border-2 border-[#d2b48c] rounded-lg p-6 shadow-md relative animate-fade-in">
-                                        <div className="absolute top-0 right-0 bg-[#8b4513] text-amber-50 px-4 py-1 rounded-bl-lg text-sm font-bold">{currentLevel.age}</div>
-                                        <h3 className="text-2xl font-bold mb-4 text-[#8b4513] border-b border-amber-200 pb-2">{currentLevel.sceneName}</h3>
+                                    /* 移除了原本的白底與邊框，讓文字直接顯示在畫卷上 */
+                                    <div className="p-4 md:p-8 relative animate-fade-in">
+                                        <div className="absolute top-0 right-0 bg-[#8b4513]/80 text-amber-50 px-4 py-1 rounded text-sm font-bold shadow-sm">{currentLevel.age}</div>
+                                        <h3 className="text-2xl font-bold mb-4 text-[#8b4513] border-b border-[#8b4513]/30 pb-2">{currentLevel.sceneName}</h3>
                                         <p className="text-lg mb-6"><strong>旁白：</strong>{currentLevel.desc}</p>
-                                        <div className="bg-amber-100/50 p-4 border-l-4 border-[#8b4513] mb-8 text-lg font-bold italic">「{currentLevel.quote}」</div>
+                                        <div className="bg-[#8b4513]/10 p-4 border-l-4 border-[#8b4513] mb-8 text-lg font-bold italic rounded-r-lg">「{currentLevel.quote}」</div>
                                         {gameState === 'playing' && (
                                             <div className="space-y-4">
                                                 {currentLevel.choices.map((choice, idx) => (
-                                                    <button key={idx} onClick={() => handleChoice(choice)} className="w-full text-left p-4 rounded border-2 border-amber-300 hover:border-[#8b4513] hover:bg-amber-50 transition-all text-lg flex gap-3">
-                                                        <span className="bg-amber-200 text-amber-900 font-bold w-6 h-6 flex items-center justify-center rounded shrink-0">{idx === 0 ? 'A' : 'B'}</span>
+                                                    /* 按鈕改為半透明背景，融入畫卷風格 */
+                                                    <button key={idx} onClick={() => handleChoice(choice)} className="w-full text-left p-4 rounded-xl border border-[#8b4513]/30 bg-white/40 hover:bg-white/70 hover:border-[#8b4513] backdrop-blur-sm transition-all text-lg flex gap-3 shadow-sm">
+                                                        <span className="bg-amber-200/80 text-amber-900 font-bold w-6 h-6 flex items-center justify-center rounded shrink-0">{idx === 0 ? 'A' : 'B'}</span>
                                                         <span>{choice.text}</span>
                                                     </button>
                                                 ))}
                                             </div>
                                         )}
                                         {gameState === 'feedback' && (
-                                            <div className={`p-6 rounded-lg border-2 ${feedback.isCorrect ? 'bg-green-50 border-green-500 text-green-800' : 'bg-red-50 border-red-400 text-red-800'}`}>
-                                                <p className="text-lg mb-6 font-bold">{feedback.text}</p>
-                                                <button onClick={proceedFromFeedback} className={`px-6 py-2 rounded font-bold text-white ${feedback.isCorrect ? 'bg-green-700' : 'bg-red-600'}`}>
+                                            <div className="p-6 text-center">
+                                                <p className={`text-xl mb-6 font-bold ${feedback.isCorrect ? 'text-green-800' : 'text-red-800'}`}>{feedback.text}</p>
+                                                <button onClick={proceedFromFeedback} className={`px-8 py-3 rounded-full font-bold text-white shadow-md transition-transform hover:scale-105 ${feedback.isCorrect ? 'bg-green-700' : 'bg-red-700'}`}>
                                                     {feedback.isCorrect ? '繼續旅程' : '重新抉擇'}
                                                 </button>
                                             </div>
@@ -313,28 +320,28 @@
                         )}
 
                         {gameState === 'matching' && (
-                            <div className="bg-[#fffcf5]/95 border-2 border-[#d2b48c] rounded-lg p-6 shadow-lg text-center animate-fade-in">
-                                <h2 className="text-3xl font-bold mb-4 text-[#8b4513]">終章考驗：史跡回顧</h2>
+                            <div className="p-4 md:p-8 text-center animate-fade-in">
+                                <h2 className="text-3xl font-bold mb-6 text-[#8b4513]">終章考驗：史跡回顧</h2>
                                 <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-2">
+                                    <div className="space-y-3">
                                         {ROUTE_DATA.map(n => (
-                                            <button key={n.id} onClick={() => setSelectedCountry(n)} className={`w-full p-2 border-2 rounded ${matchedPairs.includes(n.id) ? 'bg-green-100 opacity-50' : selectedCountry?.id === n.id ? 'bg-amber-300' : 'bg-white'}`}>{n.state}</button>
+                                            <button key={n.id} onClick={() => setSelectedCountry(n)} className={`w-full p-3 border border-[#8b4513]/30 rounded-xl font-bold transition-colors ${matchedPairs.includes(n.id) ? 'bg-green-700/20 text-green-900 opacity-50' : selectedCountry?.id === n.id ? 'bg-[#8b4513]/30' : 'bg-white/40 hover:bg-white/70 backdrop-blur-sm'}`}>{n.state}</button>
                                         ))}
                                     </div>
-                                    <div className="space-y-2">
+                                    <div className="space-y-3">
                                         {shuffledEvents.map(e => (
-                                            <button key={e.id} onClick={() => setSelectedEvent(e)} className={`w-full p-2 border-2 rounded ${matchedPairs.includes(e.id) ? 'bg-green-100 opacity-50' : selectedEvent?.id === e.id ? 'bg-amber-300' : 'bg-white'}`}>{e.tag.split('【')[1].replace('】', '')}</button>
+                                            <button key={e.id} onClick={() => setSelectedEvent(e)} className={`w-full p-3 border border-[#8b4513]/30 rounded-xl font-bold transition-colors ${matchedPairs.includes(e.id) ? 'bg-green-700/20 text-green-900 opacity-50' : selectedEvent?.id === e.id ? 'bg-[#8b4513]/30' : 'bg-white/40 hover:bg-white/70 backdrop-blur-sm'}`}>{e.tag.split('【')[1].replace('】', '')}</button>
                                         ))}
                                     </div>
                                 </div>
-                                {matchedPairs.length === ROUTE_DATA.length && <button onClick={() => setGameState('end')} className="mt-8 bg-[#8b4513] text-white px-8 py-3 rounded-full font-bold animate-bounce">查看結局</button>}
+                                {matchedPairs.length === ROUTE_DATA.length && <button onClick={() => setGameState('end')} className="mt-8 bg-[#8b4513] text-white px-8 py-3 rounded-full font-bold animate-bounce shadow-md">查看結局</button>}
                             </div>
                         )}
 
                         {gameState === 'end' && (
-                            <div className="bg-[#fffcf5]/95 border-2 border-[#d2b48c] rounded-lg p-8 shadow-lg text-center animate-fade-in">
+                            <div className="p-4 md:p-8 text-center animate-fade-in">
                                 <h2 className="text-3xl font-bold mb-6 text-[#8b4513]">終章總結：文化傳承</h2>
-                                <div className="text-left bg-amber-50 p-6 rounded border border-amber-200 leading-relaxed space-y-4">
+                                <div className="text-left bg-white/40 backdrop-blur-sm p-6 rounded-xl border border-[#8b4513]/30 leading-relaxed space-y-4 max-w-2xl mx-auto shadow-sm">
                                     <p>孔子晚年回到魯國，不再求仕，而是全心投入教育與經典整理。</p>
                                     <ul className="list-disc list-inside space-y-2">
                                         <li>整理五經，保存文化根脈。</li>
@@ -342,7 +349,7 @@
                                         <li>特質：<strong>知其不可而為之、安貧樂道、以道抗勢</strong>。</li>
                                     </ul>
                                 </div>
-                                <button onClick={() => window.location.reload()} className="mt-8 bg-[#8b4513] text-white px-8 py-3 rounded-full font-bold flex items-center gap-2 mx-auto"><Icon name="RotateCcw" /> 再次遊歷</button>
+                                <button onClick={() => window.location.reload()} className="mt-8 bg-[#8b4513] text-white px-8 py-3 rounded-full font-bold flex items-center gap-2 mx-auto shadow-md hover:scale-105 transition-transform"><Icon name="RotateCcw" /> 再次遊歷</button>
                             </div>
                         )}
                     </main>
