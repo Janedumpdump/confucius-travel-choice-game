@@ -20,13 +20,14 @@
             /* ========================================== */
             background-image: url('https://imgur.com/fpS6Itk.jpg'); 
             
-            /* 修改1：強制按螢幕寬度比例縮放，確保地圖不會因為螢幕太寬而失控 */
+            /* 強制按螢幕寬度比例縮放，確保地圖不會因為螢幕太寬而失控 */
             background-size: 100% auto; 
             background-position: center top; 
-            background-attachment: fixed;    
+            
+            /* 【關鍵修復】移除 background-attachment: fixed; 讓底圖自然跟隨網頁流動 */
             background-repeat: no-repeat;
             
-            /* 修改2：設定與您畫卷一模一樣的底色，讓畫卷無限往下延伸 */
+            /* 設定與您畫卷一模一樣的底色，讓畫卷往下滾動時無限延伸 */
             background-color: #e5d9c5;       
         }
         .animate-fade-in { animation: fadeIn 0.5s ease-out forwards; }
@@ -253,10 +254,10 @@
                         </div>
                     </header>
 
-                    {/* 修改3：將 pt-[48vh] 改為 pt-[42vw] md:pt-[38vw]。
-                        這能確保無論螢幕怎麼縮放，文字方塊都會準確地落在您圖片的米色畫卷區域！
+                    {/* 【關鍵修復2】將所有 pt-[...] 統一改為完美的比例 pt-[40vw]，
+                        這樣不論在大螢幕還是小螢幕，文字一定會從圖片的米色畫卷起點開始。
                     */}
-                    <main className="max-w-4xl w-full mx-auto p-4 flex-grow flex flex-col justify-start pt-[42vw] md:pt-[38vw] relative z-10">
+                    <main className="max-w-4xl w-full mx-auto p-4 flex-grow flex flex-col justify-start pt-[40vw] relative z-10">
                         {gameState === 'intro' && (
                             <div className="p-4 md:p-8 text-center animate-fade-in">
                                 <h2 className="text-4xl font-bold mb-4 text-[#8b4513]">孔子周遊列國</h2>
