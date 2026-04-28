@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>孔子周遊列國：道行天下抉擇錄</title>
+    <!-- 引入 React, Babel 和 Tailwind CSS 為了讓小白能直接運行 -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Noto Serif TC', serif; }
+        .animate-fade-in { animation: fadeIn 0.5s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="bg-[#fdf8ef]">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // 圖標組件複刻 (因為 HTML 無法直接 import lucide-react)
+        const Icon = ({ name, className = "w-6 h-6" }) => {
+            const icons = {
+                ScrollText: <path d="M8 21h12a2 2 0 0 0 2-2v-2H10v2a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v3h4" />,
+                BookHeart: <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" />,
+                Utensils: <path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2M7 2v20M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7" />,
+                Crown: <path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7Zm3 16h14" />,
+                Play: <polygon points="5 3 19 12 5 21 5 3" />,
+                RotateCcw: <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+            };
+            return (
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                    {icons[name] || <circle cx="12" cy="12" r="10" />}
+                </svg>
+            );
+        };
+
+        const ROUTE_DATA = [
+            {
+                id: 0, state: "魯國", tag: "魯國【禮崩樂壞】", age: "約55歲", sceneName: "魯國——禮崩樂壞的起點",
+                desc: "三桓專權，庭中出現僭越禮制的景象（八佾舞於庭）。",
+                quote: "若連魯都不能守禮，天下又該往哪裡走？",
+                disciple: { name: "冉有", text: "老師，季氏雖僭越，但掌握實權。若我們稍作妥協，先取得官職，或許能藉機推行大道？" },
+                choices: [
+                    { text: "留下來向權臣低頭，求一個安穩位置。", isCorrect: false, stats: { morality: -30, power: +30, food: +10 } },
+                    { text: "明知艱難，仍堅持正名與禮治，離魯求道。", isCorrect: true, stats: { morality: +20, power: -20, food: -10 } }
+                ],
+                feedback: { fail: "孔子不會為求一官半職而放棄原則。當時權臣只看重利益，若同流合污，便失了道義。", success: "正確。孔子選擇離開，開始周遊列國，體現「知其不可而為之」。" },
+                nextClue: "接下來，我們要前往一個國君私慾極重的地方，甚至向我們詢問用兵之法..."
+            },
+            {
+                id: 1, state: "衛國", tag: "衛國【問教軍旅】", age: "約55—56歲", sceneName: "衛國——禮與權勢的拉扯",
+                desc: "衛靈公禮待孔子，卻不接納孔子的「仁政德治」政治主張。衛靈公向孔子請教兵陣，孔子回答不知，結果遭靈公冷待。",
+                quote: "俎豆之事，則嘗聞之矣，軍旅之事，未之學也。",
+                disciple: { name: "子貢", text: "老師！為何不輔助靈公，這樣會讓我們被冷待，失去政治機會！" },
+                choices: [
+                    { text: "為了得到政治話語，向靈公奉上軍事建議。", isCorrect: false, stats: { morality: -30, power: +30, food: +10 } },
+                    { text: "寧離開衛國，不會改變自己的説法。", isCorrect: true, stats: { morality: +20, power: -20, food: -10 } }
+                ],
+                feedback: { fail: "委曲自己，改變自己的主張和堅持則非君子所為。若孔子妥協，便不再是孔子。", success: "正確。孔子寧不受重用也不向權勢低頭，體現「不會委曲」的知識分子特質。" },
+                nextClue: "離開衛國後，我們途經一個地方，卻被人誤認作仇敵而遭包圍..."
+            },
+            {
+                id: 2, state: "匡地", tag: "匡地【被圍五日】", age: "約56歲", sceneName: "匡地——被圍五日",
+                desc: "途中經過匡地，被誤認作陽虎而遭逢【被圍五日】。",
+                quote: "文王既沒，文不在茲乎？天之將喪斯文也...",
+                disciple: { name: "子貢", text: "老師！匡人把我們包圍了，兵器相向！難道我們還要拘泥於禮節，不趕緊想辦法脫身嗎？" },
+                choices: [
+                    { text: "只要對方願意放行，禮節可以先放一邊。", isCorrect: false, stats: { morality: -30, power: +10, food: +10 } },
+                    { text: "身陷危難，也不能向失禮與失道妥協。", isCorrect: true, stats: { morality: +20, power: +0, food: -10 } }
+                ],
+                feedback: { fail: "妥協或許能脫身，但時君多嫌儒家「繁文縟節」，若孔子妥協，便不再是孔子。", success: "正確。孔子寧身陷險境也不向權勢低頭，體現「以道抗勢」。" },
+                nextClue: "下一站，我們只是短暫途經，並未作過多停留，但仍堅持傳道..."
+            },
+            {
+                id: 3, state: "曹國", tag: "曹國【短暫停駐】", age: "約56-57歲", sceneName: "曹國——短暫停駐",
+                desc: "孔子一路西行抵達曹國。理想不是只在一地發光，而是要帶著走。",
+                quote: "道不因路途遙遠而停止。",
+                disciple: { name: "冉有", text: "曹君看來並不重視禮樂。老師，我們是不是該換個說法，跟他談談如何富國強兵？" },
+                choices: [
+                    { text: "既然未必接納我們，不如轉談實利。", isCorrect: false, stats: { morality: -20, power: +20, food: +10 } },
+                    { text: "即使只是途經，也要把仁政與禮治說下去。", isCorrect: true, stats: { morality: +10, power: +0, food: -10 } }
+                ],
+                feedback: { fail: "時君崇尚富國強兵，若改談實利，便違背了初衷。", success: "即使過境也不放棄傳播仁與禮的理想。" },
+                nextClue: "接著，我們要去的地方有大樹被連根拔起的危機，司馬桓魋正等著我們..."
+            },
+            {
+                id: 4, state: "宋國", tag: "宋國【宋人伐木】", age: "約56—57歲", sceneName: "宋國——大樹下的危機",
+                desc: "宋國司馬桓魋欲殺孔子，派人拔去了孔子與弟子演習禮儀的大樹，史稱【宋人伐木】。",
+                quote: "天生德於予，桓魋其如予何？",
+                disciple: { name: "子路", text: "桓魋太囂張了！竟然把我們演禮的樹拔了！老師，情勢危急，我們先微服逃走保命吧！" },
+                choices: [
+                    { text: "情勢危險，先把理想收起來，換取安全。", isCorrect: false, stats: { morality: -30, power: +0, food: +20 } },
+                    { text: "越是危急，越不能放棄講學與行道。", isCorrect: true, stats: { morality: +20, power: -10, food: -10 } }
+                ],
+                feedback: { fail: "面對威脅若退縮，理想便會在亂世中消失。", success: "正確。孔子堅信天命在己，在困厄中仍守志。" },
+                nextClue: "接下來，老師將在東門外與我們走散，甚至被人笑稱像流浪狗..."
+            },
+            {
+                id: 5, state: "鄭國", tag: "鄭國【喪家之犬】", age: "約57—58歲", sceneName: "鄭國——喧鬧人潮中的行者",
+                desc: "孔子與弟子走散。有鄭國人形容孔子狼狽的模樣如同【喪家之犬】。孔子聽聞大笑承認。",
+                quote: "形容我像喪家之犬，然哉！然哉！",
+                disciple: { name: "子貢", text: "老師，這太屈辱了... 我們何必為了一個不被接受的道，四處流浪受此等嘲笑？" },
+                choices: [
+                    { text: "講些迎合君主的話換取官職，別再流浪了。", isCorrect: false, stats: { morality: -40, power: +30, food: +20 } },
+                    { text: "即使被人嘲笑落魄，也要堅持仁與禮。", isCorrect: true, stats: { morality: +20, power: -20, food: -10 } }
+                ],
+                feedback: { fail: "孔子不被重用正是因為堅持王道，拒絕迎合時君的霸道。", success: "即使落魄如喪家之犬，也守住「安貧樂道」的精神。" },
+                nextClue: "下一站是最艱苦的一役，我們將會面臨斷糧的絕境，弟子們都餓壞了..."
+            },
+            {
+                id: 6, state: "陳國", tag: "陳國【在陳絕糧】", age: "約58—61歲", sceneName: "陳國——絕糧中的堅持",
+                desc: "孔子仕陳湣公，也只給他一個有名無實的職位。楚國欲聘用孔子，陳、蔡大夫發兵圍孔子於曠野。孔子與弟子被圍困，糧食斷絕，發生了【在陳絕糧】。",
+                quote: "君子固窮，小人窮斯濫矣。",
+                disciple: { name: "子路", text: "（面帶慍色）君子亦有窮乎？大家快餓死了，難道這就是堅持大道的結果嗎！" },
+                choices: [
+                    { text: "大家快餓死了，先妥協停止講學找東西吃吧。", isCorrect: false, stats: { morality: -40, power: +0, food: +40 } },
+                    { text: "就算困厄，也要繼續絃歌不輟，不失君子之風。", isCorrect: true, stats: { morality: +30, power: +0, food: -30 } }
+                ],
+                feedback: { fail: "小人遇窮困便胡作非為，若此時放棄，之前的堅持便白費了。", success: "正確。孔子在逆境中不改其志，展現知識分子氣節。" },
+                nextClue: "度過劫難後，我們受邀前往楚國，卻又遇到權臣的阻撓..."
+            },
+            {
+                id: 7, state: "楚國", tag: "楚國【禮遇未用】", age: "約60—67歲", sceneName: "楚國——最後一程",
+                desc: "在楚國雖受禮遇，卻遭權臣阻撓，始終未真正被重用。",
+                quote: "人可以不見用，但道不能不守。",
+                disciple: { name: "子貢", text: "楚王本有意重用，卻被阻撓。老師，這十三年屢屢碰壁，是不是我們的『道』真的太不合時宜了？" },
+                choices: [
+                    { text: "接受不合道義的安排，只求一個結果。", isCorrect: false, stats: { morality: -40, power: +40, food: +10 } },
+                    { text: "即使屢遭挫折，也把道放在第一位。", isCorrect: true, stats: { morality: +20, power: -10, food: -10 } }
+                ],
+                feedback: { fail: "時君懼怕孔子的治國理想會威脅自身權益，迎合現實不符合孔子精神。", success: "孔子堅持到底，最後決定返回魯國。" },
+                nextClue: "十三年的漂泊即將結束，請點擊地圖終點，回到我們出發的地方..."
+            },
+            {
+                id: 8, state: "魯國", tag: "魯國【田賦之爭】", age: "約68歲", sceneName: "魯國——歸魯",
+                desc: "孔子因魯大夫季康子遣使迎回魯國，魯國尊為國老，但未受魯哀公的任用。弟子冉有奉季康子之命，就魯國即將推行「田賦」之事，要孔子表態。",
+                quote: "君主需要行仁政，向百姓徵收田賦乃苛政，要輕。",
+                disciple: { name: "冉有", text: "老師，春秋時代國以發展為重，不收賦稅國家度支從何而出？" },
+                choices: [
+                    { text: "幫助魯國季氏推行田賦，以得重用。", isCorrect: false, stats: { morality: -40, power: +50, food: +20 } },
+                    { text: "批評冉有，並不再求出仕，轉而專注於著書講學，藉此宣揚「道」。", isCorrect: true, stats: { morality: +40, power: -30, food: +0 } }
+                ],
+                feedback: { fail: "孔子不會委曲存。到了晚年，更不會為了官職而放棄對仁政的堅持。", success: "正確。孔子堅持到底，最後決定以授徒講學實踐自己的理念。" },
+                nextClue: "所有的抉擇皆已定局，請準備進入最終的記憶考驗..."
+            }
+        ];
+
+        function App() {
+            const [gameState, setGameState] = useState('intro');
+            const [currentLevelId, setCurrentLevelId] = useState(0);
+            const [feedback, setFeedback] = useState(null);
+            const [stats, setStats] = useState({ morality: 50, food: 80, power: 50 });
+            const [shuffledEvents, setShuffledEvents] = useState([]);
+            const [selectedCountry, setSelectedCountry] = useState(null);
+            const [selectedEvent, setSelectedEvent] = useState(null);
+            const [matchedPairs, setMatchedPairs] = useState([]);
+
+            const currentLevel = ROUTE_DATA[currentLevelId];
+
+            useEffect(() => {
+                if (gameState === 'matching') {
+                    const events = ROUTE_DATA.map(d => ({ id: d.id, tag: d.tag })).sort(() => Math.random() - 0.5);
+                    setShuffledEvents(events);
+                }
+            }, [gameState]);
+
+            const handleChoice = (choice) => {
+                setStats(prev => ({
+                    morality: Math.min(100, Math.max(0, prev.morality + choice.stats.morality)),
+                    food: Math.min(100, Math.max(0, prev.food + choice.stats.food)),
+                    power: Math.min(100, Math.max(0, prev.power + choice.stats.power)),
+                }));
+                setFeedback({
+                    isCorrect: choice.isCorrect,
+                    text: choice.isCorrect ? currentLevel.feedback.success : currentLevel.feedback.fail
+                });
+                setGameState('feedback');
+            };
+
+            const proceedFromFeedback = () => {
+                if (!feedback.isCorrect) {
+                    setGameState('playing');
+                    setFeedback(null);
+                } else {
+                    setGameState('routing');
+                }
+            };
+
+            const handleMapClick = (targetId) => {
+                if (gameState !== 'routing') return;
+                if (targetId === currentLevelId + 1) {
+                    if (targetId >= ROUTE_DATA.length) {
+                        setGameState('matching');
+                    } else {
+                        setCurrentLevelId(targetId);
+                        setGameState('playing');
+                        setFeedback(null);
+                    }
+                } else {
+                    alert("走錯方向啦！請根據線索點擊正確的下一個國家或終點。");
+                }
+            };
+
+            useEffect(() => {
+                if (selectedCountry && selectedEvent) {
+                    if (selectedCountry.id === selectedEvent.id) {
+                        setMatchedPairs([...matchedPairs, selectedCountry.id]);
+                    }
+                    setTimeout(() => {
+                        setSelectedCountry(null);
+                        setSelectedEvent(null);
+                    }, 500);
+                }
+            }, [selectedCountry, selectedEvent]);
+
+            return (
+                <div className="min-h-screen bg-[#fdf8ef] text-amber-950 pb-10">
+                    <header className="bg-[#8b4513] text-amber-50 p-4 shadow-md sticky top-0 z-50">
+                        <div className="max-w-4xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4">
+                            <div className="flex items-center gap-2">
+                                <Icon name="ScrollText" />
+                                <h1 className="text-xl font-bold tracking-widest">道行天下抉擇錄</h1>
+                            </div>
+                            {(gameState !== 'intro' && gameState !== 'end') && (
+                                <div className="flex gap-4 text-sm font-bold bg-amber-900/50 p-2 rounded-lg">
+                                    <div className="flex items-center gap-1"><Icon name="BookHeart" className="w-4 h-4 text-pink-300" /> 道義: {stats.morality}</div>
+                                    <div className="flex items-center gap-1"><Icon name="Utensils" className="w-4 h-4 text-amber-300" /> 糧食: {stats.food}</div>
+                                    <div className="flex items-center gap-1"><Icon name="Crown" className="w-4 h-4 text-yellow-400" /> 權勢: {stats.power}</div>
+                                </div>
+                            )}
+                        </div>
+                    </header>
+
+                    <main className="max-w-4xl mx-auto p-4 mt-4">
+                        {gameState === 'intro' && (
+                            <div className="bg-[#fffcf5] border-2 border-[#d2b48c] rounded-lg p-8 shadow-lg text-center animate-fade-in">
+                                <h2 className="text-4xl font-bold mb-4 text-[#8b4513]">孔子周遊列國</h2>
+                                <h3 className="text-2xl mb-8 text-amber-800">十三年求道之旅</h3>
+                                <div className="text-left bg-amber-50 p-6 rounded border border-amber-200 mb-8 leading-relaxed">
+                                    <p className="mb-2"><strong>目標：</strong> 幫助孔子做出抉擇，堅持「以道抗勢」、「安貧樂道」。</p>
+                                    <p className="mb-2 text-red-700 font-bold">⚠️ 注意：選擇正確的「道」，往往會損失「糧食」與「權勢」。</p>
+                                </div>
+                                <button onClick={() => setGameState('playing')} className="bg-[#8b4513] hover:bg-[#a0522d] text-white px-8 py-3 rounded-full font-bold text-lg flex items-center gap-2 mx-auto transition-transform hover:scale-105">
+                                    <Icon name="Play" className="w-5 h-5" /> 開始旅程
+                                </button>
+                            </div>
+                        )}
+
+                        {(gameState === 'playing' || gameState === 'feedback' || gameState === 'routing') && (
+                            <div className="space-y-6">
+                                <div className={`bg-[#fffcf5] border-2 rounded-lg p-6 shadow-sm overflow-x-auto transition-all ${gameState === 'routing' ? 'border-amber-500 shadow-amber-200' : 'border-[#d2b48c]'}`}>
+                                    <div className="flex items-center min-w-max pb-4 px-2">
+                                        {ROUTE_DATA.map((node, idx) => (
+                                            <React.Fragment key={node.id}>
+                                                <button onClick={() => handleMapClick(idx)} className={`flex flex-col items-center ${idx <= currentLevelId ? 'opacity-100' : 'opacity-50'}`}>
+                                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 ${idx === currentLevelId ? 'bg-[#8b4513] text-amber-50 border-[#8b4513] scale-110' : 'bg-amber-200 text-amber-800'}`}>
+                                                        {idx + 1}
+                                                    </div>
+                                                    <span className="text-xs mt-2 font-bold">{node.state}</span>
+                                                </button>
+                                                {idx < ROUTE_DATA.length - 1 && <div className="w-8 h-1 bg-amber-200 mx-2"></div>}
+                                            </React.Fragment>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {gameState !== 'routing' && (
+                                    <div className="bg-[#fffcf5] border-2 border-[#d2b48c] rounded-lg p-6 shadow-md relative animate-fade-in">
+                                        <div className="absolute top-0 right-0 bg-[#8b4513] text-amber-50 px-4 py-1 rounded-bl-lg text-sm font-bold">{currentLevel.age}</div>
+                                        <h3 className="text-2xl font-bold mb-4 text-[#8b4513] border-b border-amber-200 pb-2">{currentLevel.sceneName}</h3>
+                                        <p className="text-lg mb-6"><strong>旁白：</strong>{currentLevel.desc}</p>
+                                        <div className="bg-amber-100/50 p-4 border-l-4 border-[#8b4513] mb-8 text-lg font-bold italic">「{currentLevel.quote}」</div>
+                                        {gameState === 'playing' && (
+                                            <div className="space-y-4">
+                                                {currentLevel.choices.map((choice, idx) => (
+                                                    <button key={idx} onClick={() => handleChoice(choice)} className="w-full text-left p-4 rounded border-2 border-amber-300 hover:border-[#8b4513] hover:bg-amber-50 transition-all text-lg flex gap-3">
+                                                        <span className="bg-amber-200 text-amber-900 font-bold w-6 h-6 flex items-center justify-center rounded shrink-0">{idx === 0 ? 'A' : 'B'}</span>
+                                                        <span>{choice.text}</span>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )}
+                                        {gameState === 'feedback' && (
+                                            <div className={`p-6 rounded-lg border-2 ${feedback.isCorrect ? 'bg-green-50 border-green-500 text-green-800' : 'bg-red-50 border-red-400 text-red-800'}`}>
+                                                <p className="text-lg mb-6 font-bold">{feedback.text}</p>
+                                                <button onClick={proceedFromFeedback} className={`px-6 py-2 rounded font-bold text-white ${feedback.isCorrect ? 'bg-green-700' : 'bg-red-600'}`}>
+                                                    {feedback.isCorrect ? '繼續旅程' : '重新抉擇'}
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {gameState === 'matching' && (
+                            <div className="bg-[#fffcf5] border-2 border-[#d2b48c] rounded-lg p-6 shadow-lg text-center animate-fade-in">
+                                <h2 className="text-3xl font-bold mb-4 text-[#8b4513]">終章考驗：史跡回顧</h2>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        {ROUTE_DATA.map(n => (
+                                            <button key={n.id} onClick={() => setSelectedCountry(n)} className={`w-full p-2 border-2 rounded ${matchedPairs.includes(n.id) ? 'bg-green-100 opacity-50' : selectedCountry?.id === n.id ? 'bg-amber-300' : 'bg-white'}`}>{n.state}</button>
+                                        ))}
+                                    </div>
+                                    <div className="space-y-2">
+                                        {shuffledEvents.map(e => (
+                                            <button key={e.id} onClick={() => setSelectedEvent(e)} className={`w-full p-2 border-2 rounded ${matchedPairs.includes(e.id) ? 'bg-green-100 opacity-50' : selectedEvent?.id === e.id ? 'bg-amber-300' : 'bg-white'}`}>{e.tag.split('【')[1].replace('】', '')}</button>
+                                        ))}
+                                    </div>
+                                </div>
+                                {matchedPairs.length === ROUTE_DATA.length && <button onClick={() => setGameState('end')} className="mt-8 bg-[#8b4513] text-white px-8 py-3 rounded-full font-bold animate-bounce">查看結局</button>}
+                            </div>
+                        )}
+
+                        {gameState === 'end' && (
+                            <div className="bg-[#fffcf5] border-2 border-[#d2b48c] rounded-lg p-8 shadow-lg text-center animate-fade-in">
+                                <h2 className="text-3xl font-bold mb-6 text-[#8b4513]">終章總結：文化傳承</h2>
+                                <div className="text-left bg-amber-50 p-6 rounded border border-amber-200 leading-relaxed space-y-4">
+                                    <p>孔子晚年回到魯國，不再求仕，而是全心投入教育與經典整理。</p>
+                                    <ul className="list-disc list-inside space-y-2">
+                                        <li>整理五經，保存文化根脈。</li>
+                                        <li>編纂《春秋》，以褒貶筆法表達價值判斷。</li>
+                                        <li>特質：<strong>知其不可而為之、安貧樂道、以道抗勢</strong>。</li>
+                                    </ul>
+                                </div>
+                                <button onClick={() => window.location.reload()} className="mt-8 bg-[#8b4513] text-white px-8 py-3 rounded-full font-bold flex items-center gap-2 mx-auto"><Icon name="RotateCcw" /> 再次遊歷</button>
+                            </div>
+                        )}
+                    </main>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
